@@ -16,3 +16,4 @@ if (validArgs.validInts && validArgs.validLength && validArgs.validOperators){
     let result = Calculator(args).calculatePriority().calculateRegular();
     print(result.sum)
 }
+ 

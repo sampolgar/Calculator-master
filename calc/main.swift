@@ -16,5 +16,5 @@ if (validArgs.isValid()){
     let calc = Calculator(args);
     print("\(Int(calc.args[0]) ?? 0)")
 } else {
-    ExceptionHandler(errString: "validArgs aren't valid \(args)").invalidArgs()
+    ExceptionHandler(errString: "\(args)").invalidArgs()
 }

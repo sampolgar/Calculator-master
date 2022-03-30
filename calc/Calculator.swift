@@ -10,137 +10,120 @@ import Foundation
 
 class Calculator {
     
-    var sum = 0;
-    var nf = NumberFormatter()
-    var op: String = "*"
-    var lhs: Int?
-    var rhs: Int?
+    var tempSum: Int
+    var op: String
+    var lhs: Int
+    var rhs: Int
+    var opPos: Int
+    var leftPos: Int
+    var rightPos: Int
     var args: [String] = []
-
-
+    var filtered: [String] = []
+    var tempArr: [String] = []
+    
     init(_ args: [String]) {
-        self.args = args
-    }
-    
-    enum ValidationError: Error{
-        case divideByZero
-        case moduloByZero
-    }
-    
-    func calculatePriority() -> Calculator {
         
+        self.tempSum = 0
+        self.lhs = 0
+        self.rhs = 0
+        self.opPos = 0
+        self.leftPos = 0
+        self.rightPos = 0
+        self.op = ""
+        self.args = args
+        self.filtered = [""]
+        self.tempArr = [""]
+        calculatePriority()     //calculate priority operators * / % before regular operators + -
+        calculateRegular()      //then calculate regular operators
+    }
+    
+    //loop through args and look for the priority operators. Once found, calculate the left and right numbers and add it back to the array.
+    func calculatePriority(){
         for i in stride(from: 1, to: args.count-1, by: 2){
-            op = args[i]
-            if isPriority(op){                                      //if it's a priority operator
-                
-                let leftStringInt = args[i-1]
-                let lhs = Int(leftStringInt)
-                let rightStringInt = args[i+1]
-                let rhs = Int(rightStringInt)
-
-               
-                if let lhsSum = lhs, let rhsSum = rhs {
-                    sum = calculate(lhsSum, rhsSum, op)                 //get the sum
-                    if(args.count>3){
-                        args[i+1] = String(sum)                             // put it back into the array at the right position
-                        args.remove(at:i)                                   //delete the blank places in the array
-                        args.remove(at:i-1)
-                    }
-                }
+            //assign loop variables
+            leftPos = i-1; opPos = i; rightPos = i+1; op = args[i]
+            if isPriority(){
+                setLeftAndRightInts(args[i-1], args[i+1])
+                tempSum = calculate()
+                updateArray(tempSum)
             }
         }
-        return self                                                     //return the object with a
+        deleteEmptySpacesFromArray()
     }
-        
-    
-    
-    func calculateRegular() -> Calculator {                             //
+    //loop through args and look for the regular operators. Once found, calculate the left and right numbers and add it back to the array.
+    func calculateRegular(){
         for i in stride(from: 1, to: args.count-1, by: 2){
-            
-            op = args[i]
-            
-            let leftStringInt = args[i-1]
-            let lhs = Int(leftStringInt)
-            let rightStringInt = args[i+1]
-            let rhs = Int(rightStringInt)
-            
-            if let lhsSum = lhs, let rhsSum = rhs {
-                sum = calculate(lhsSum, rhsSum, op)                      //get the sum
-                if(args.count>3){
-                    args[i+1] = String(sum)                             // put it back into the array at the right position
-                    args.remove(at:i)                                   //delete the blank places in the array
-                    args.remove(at:i-1)
-                // loop again
-                }
+            //assign loop variables
+            leftPos = i-1; rightPos = i+1; opPos = i; op = args[i]
+            setLeftAndRightInts(args[i-1], args[i+1])
+            tempSum = calculate()
+            updateArray(tempSum)
         }
-//        return self
+        deleteEmptySpacesFromArray()
     }
-        return self
-}
+    
+    //after making the calculation, update the array with "". E.g. ["5","x","3","+","4"] => ["","","15","+","4"]
+    func updateArray(_ tempSum: Int){
+        args[leftPos] = ""
+        args[opPos] = ""
+        args[rightPos] = String(tempSum)
+    }
+    
+    //then delete the empty spaces "". E.g. ["5","x","3","+","4"] => ["15","+","4"]
+    //use array.filter to prevent out of bounds errors from deleteing an array using array.remove
+    func deleteEmptySpacesFromArray(){
+        tempArr = args;
+        args = tempArr.filter { char in return !char.isEmpty }
+    }
+    
+    //turn string into Int for calculation
+    func setLeftAndRightInts(_ leftString: String, _ rightString:String ){
+        lhs = Int(leftString) ?? 0
+        rhs = Int(rightString) ?? 0
+    }
     
     
-    
-    func calculate(_ lhs: Int,_ rhs: Int,_ op: String) -> Int {
+    func calculate() -> Int {
         switch op {
         case "x", "*", "X":
-            return multiply(lhs, rhs)
+            return multiply()
         case "/":
-            return tryDivide(lhs, rhs)
+            return divide()
         case "%":
-            return tryModulo(lhs, rhs)
+            return modulo()
         case "+":
             return lhs + rhs;
         case "-":
             return lhs - rhs;
         default:
-            return lhs;                          // create error reporting for default caser
+            return lhs;
         }
     }
     
-    
-    func multiply (_ lhs: Int,_ rhs: Int) -> Int {
+    func multiply () -> Int {
         return lhs * rhs
     }
     
-    
-    //Division
-    func tryDivide(_ lhs: Int, _ rhs: Int) -> Int {
-        do {
-            return try divider(lhs, rhs)
-        } catch {
-            print("cannot divide by zero \(lhs) / \(rhs)")
-            exit(1)
-        }
-    }
-    
-    func divider(_ lhs: Int, _ rhs: Int) throws -> Int {
+    func divide() -> Int {
         if rhs == 0 {
-            throw ValidationError.divideByZero
+            ExceptionHandler(errString: "\(rhs): the denominator is zero.").divideByZero()
         } else {
-            print("\(lhs) and \(rhs)")
             return lhs/rhs
         }
+        return 0
     }
     
-    func tryModulo(_ lhs: Int, _ rhs: Int) -> Int {
-        do {
-            return try moduloer(lhs, rhs)
-        } catch {
-            print("cannot divide by zero \(lhs) % \(rhs)")
-            exit(1)
-        }
-    }
-    
-    func moduloer(_ lhs: Int, _ rhs: Int) throws -> Int {
+    func modulo() -> Int {
         if rhs == 0 {
-            throw ValidationError.moduloByZero
+            ExceptionHandler(errString: "\(rhs): the denominator is zero.").moduloByZero()
         } else {
-            print("\(lhs) and \(rhs)")
             return lhs%rhs
         }
+        return 0
     }
     
-    func isPriority(_ op: String) -> Bool {
+    //returns true if priority
+    func isPriority() -> Bool {
         switch op {
         case "x", "*", "X", "/", "%":
             return true;

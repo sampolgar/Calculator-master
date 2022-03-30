@@ -12,8 +12,9 @@ var args = ProcessInfo.processInfo.arguments
 args.removeFirst() // remove the name of the program
 
 var validArgs = Validator(args);
-if (validArgs.validInts && validArgs.validLength && validArgs.validOperators){
-    let result = Calculator(args).calculatePriority().calculateRegular();
-    print(result.sum)
+if (validArgs.isValid()){
+    let calc = Calculator(args);
+    print("\(Int(calc.args[0]) ?? 0)")
+} else {
+    ExceptionHandler(errString: "validArgs aren't valid \(args)").invalidArgs()
 }
- 
